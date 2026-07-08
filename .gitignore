@@ -1,0 +1,149 @@
+# Environment variables (contains sensitive information)
+.env
+.env.local
+.env.*.local
+
+# Dependency directories
+node_modules/
+venv/
+.venv/
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Cache
+.cache/
+*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# BoxLite sandbox data (runtime)
+/tmp/
+boxlite-sandboxes/
+
+# User data (sources, checkpoints) - DO NOT commit
+backend/data/sources/
+backend/data/checkpoints/
+backend/checkpoint/data/
+
+# Exception: Gallery demo checkpoints (needed for showcase feature)
+!backend/data/checkpoints/did-global-cinema-aaf71f95/
+!backend/data/checkpoints/cake-equity-|-cap-table-and-eq-c18b9b37/
+!backend/data/checkpoints/team&tonic-82630039/
+
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+env/
+ENV/
+env.bak/
+ENV.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+.pdm-python
+.pdm-build/
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath
+.sage/
+*.sage.py
+
+# Environments
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# mkdocs
+/site
+
+# mypy
+.mypy_cache/
+
+# ruff
+.ruff_cache/
+
+# LSP
+language_server/
+
+# Frontend specific
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+
+# TypeScript
+*.tsbuildinfo
+
+# Next.js
+frontend/.next/
+
+# Vercel
+.vercel
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local history
+.localhistory/
+
+# Editor
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
