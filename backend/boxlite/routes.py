@@ -98,25 +98,26 @@ async def reconnect_sandbox(request: ReconnectSandboxRequest):
     Returns 404 if sandbox doesn't exist or has no files.
     """
     try:
-        from .sandbox_manager import (
-            _sandbox_managers, SINGLETON_MODE, _singleton_sandbox_id,
-            SANDBOX_BASE_DIR
-        )
+        from . import sandbox_manager as sm_module
         from pathlib import Path
+
+        _sandbox_managers = sm_module._sandbox_managers
+        SINGLETON_MODE = sm_module.SINGLETON_MODE
+        SANDBOX_BASE_DIR = sm_module.SANDBOX_BASE_DIR
 
         manager = None
 
         # Check if sandbox exists in memory
         if SINGLETON_MODE:
-            if _singleton_sandbox_id and _singleton_sandbox_id in _sandbox_managers:
-                manager = _sandbox_managers[_singleton_sandbox_id]
+            if sm_module._singleton_sandbox_id and sm_module._singleton_sandbox_id in _sandbox_managers:
+                manager = _sandbox_managers[sm_module._singleton_sandbox_id]
         else:
             if request.sandbox_id and request.sandbox_id in _sandbox_managers:
                 manager = _sandbox_managers[request.sandbox_id]
 
         # If not in memory, try to restore from disk
         if manager is None:
-            sandbox_id = request.sandbox_id if not SINGLETON_MODE else (_singleton_sandbox_id or request.sandbox_id)
+            sandbox_id = request.sandbox_id if not SINGLETON_MODE else (sm_module._singleton_sandbox_id or request.sandbox_id)
             if not sandbox_id:
                 raise HTTPException(status_code=404, detail="No sandbox ID provided")
 
@@ -138,8 +139,7 @@ async def reconnect_sandbox(request: ReconnectSandboxRequest):
             manager = BoxLiteSandboxManager(sandbox_id)
             _sandbox_managers[sandbox_id] = manager
             if SINGLETON_MODE:
-                global _singleton_sandbox_id
-                _singleton_sandbox_id = sandbox_id
+                sm_module._singleton_sandbox_id = sandbox_id
 
         # Reconnect (syncs from disk, starts dev server if needed)
         await manager.reconnect()
