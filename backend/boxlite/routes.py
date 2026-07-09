@@ -11,6 +11,7 @@ import asyncio
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -91,20 +92,54 @@ async def reconnect_sandbox(request: ReconnectSandboxRequest):
     - Page refreshes but user wants to keep their work
     - Browser tab was inactive for a while
 
+    If the sandbox manager is not in memory (e.g., after backend restart),
+    this will attempt to restore files from disk.
+
     Returns 404 if sandbox doesn't exist or has no files.
     """
     try:
-        from .sandbox_manager import _sandbox_managers, SINGLETON_MODE, _singleton_sandbox_id
+        from .sandbox_manager import (
+            _sandbox_managers, SINGLETON_MODE, _singleton_sandbox_id,
+            SANDBOX_BASE_DIR
+        )
+        from pathlib import Path
 
-        # Check if sandbox exists
+        manager = None
+
+        # Check if sandbox exists in memory
         if SINGLETON_MODE:
-            if not _singleton_sandbox_id or _singleton_sandbox_id not in _sandbox_managers:
-                raise HTTPException(status_code=404, detail="No existing sandbox found")
-            manager = _sandbox_managers[_singleton_sandbox_id]
+            if _singleton_sandbox_id and _singleton_sandbox_id in _sandbox_managers:
+                manager = _sandbox_managers[_singleton_sandbox_id]
         else:
-            if request.sandbox_id not in _sandbox_managers:
-                raise HTTPException(status_code=404, detail=f"Sandbox {request.sandbox_id} not found")
-            manager = _sandbox_managers[request.sandbox_id]
+            if request.sandbox_id and request.sandbox_id in _sandbox_managers:
+                manager = _sandbox_managers[request.sandbox_id]
+
+        # If not in memory, try to restore from disk
+        if manager is None:
+            sandbox_id = request.sandbox_id if not SINGLETON_MODE else (_singleton_sandbox_id or request.sandbox_id)
+            if not sandbox_id:
+                raise HTTPException(status_code=404, detail="No sandbox ID provided")
+
+            sandbox_dir = Path(SANDBOX_BASE_DIR) / sandbox_id
+            if not sandbox_dir.exists():
+                raise HTTPException(status_code=404, detail=f"Sandbox {sandbox_id} not found (no files on disk)")
+
+            # Count files (excluding node_modules, .git, .cache)
+            file_count = 0
+            for item in sandbox_dir.iterdir():
+                if item.name not in (".git", "node_modules", ".cache"):
+                    file_count += 1
+
+            if file_count == 0:
+                raise HTTPException(status_code=404, detail=f"Sandbox {sandbox_id} has no files")
+
+            # Create new manager and restore from disk
+            logger.info(f"Restoring sandbox from disk: {sandbox_id} ({file_count} items)")
+            manager = BoxLiteSandboxManager(sandbox_id)
+            _sandbox_managers[sandbox_id] = manager
+            if SINGLETON_MODE:
+                global _singleton_sandbox_id
+                _singleton_sandbox_id = sandbox_id
 
         # Reconnect (syncs from disk, starts dev server if needed)
         await manager.reconnect()
@@ -502,7 +537,18 @@ async def websocket_endpoint(websocket: WebSocket, sandbox_id: str):
 
     # Initialize if needed
     if manager.state.status == SandboxStatus.CREATING:
-        await manager.initialize()
+        # Check if files exist on disk (from a previous session)
+        sandbox_dir = Path(manager.work_dir)
+        has_files = sandbox_dir.exists() and any(
+            item for item in sandbox_dir.iterdir()
+            if item.name not in ('.git', 'node_modules', '.cache')
+        )
+        if has_files:
+            # Reconnect to preserve existing work
+            await manager.reconnect()
+        else:
+            # Fresh start - create default files
+            await manager.initialize()
 
     # Register output callback for real-time streaming
     async def on_output(output: ProcessOutput):
@@ -717,7 +763,18 @@ async def agent_websocket(websocket: WebSocket, sandbox_id: str):
 
     # Initialize sandbox if needed
     if manager.state.status == SandboxStatus.CREATING:
-        await manager.initialize()
+        # Check if files exist on disk (from a previous session)
+        sandbox_dir = Path(manager.work_dir)
+        has_files = sandbox_dir.exists() and any(
+            item for item in sandbox_dir.iterdir()
+            if item.name not in ('.git', 'node_modules', '.cache')
+        )
+        if has_files:
+            # Reconnect to preserve existing work
+            await manager.reconnect()
+        else:
+            # Fresh start - create default files
+            await manager.initialize()
 
     # Create event callback for agent
     async def on_agent_event(event: dict):

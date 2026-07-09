@@ -1596,6 +1596,9 @@ def get_sandbox_manager(sandbox_id: Optional[str] = None) -> BoxLiteSandboxManag
 
     In singleton mode (default), always returns the same sandbox instance.
     This prevents port conflicts when using a fixed dev server port.
+
+    If a sandbox_id is provided but not in memory, this will attempt
+    to restore files from disk (handles backend restarts gracefully).
     """
     global _singleton_sandbox_id
 
@@ -1604,6 +1607,18 @@ def get_sandbox_manager(sandbox_id: Optional[str] = None) -> BoxLiteSandboxManag
         if _singleton_sandbox_id and _singleton_sandbox_id in _sandbox_managers:
             logger.info(f"Reusing existing sandbox: {_singleton_sandbox_id}")
             return _sandbox_managers[_singleton_sandbox_id]
+
+        # Check if there's files on disk for a previous sandbox
+        if sandbox_id:
+            sandbox_dir = Path(SANDBOX_BASE_DIR) / sandbox_id
+            if sandbox_dir.exists():
+                file_count = sum(1 for item in sandbox_dir.iterdir() if item.name not in ('.git', 'node_modules', '.cache'))
+                if file_count > 0:
+                    logger.info(f"Restoring singleton sandbox from disk: {sandbox_id} ({file_count} items)")
+                    manager = BoxLiteSandboxManager(sandbox_id)
+                    _sandbox_managers[manager.sandbox_id] = manager
+                    _singleton_sandbox_id = manager.sandbox_id
+                    return manager
 
         # Create new singleton sandbox
         manager = BoxLiteSandboxManager(sandbox_id)
@@ -1615,6 +1630,17 @@ def get_sandbox_manager(sandbox_id: Optional[str] = None) -> BoxLiteSandboxManag
     # Non-singleton mode: allow multiple sandboxes
     if sandbox_id and sandbox_id in _sandbox_managers:
         return _sandbox_managers[sandbox_id]
+
+    # Check if there's files on disk for this sandbox_id
+    if sandbox_id:
+        sandbox_dir = Path(SANDBOX_BASE_DIR) / sandbox_id
+        if sandbox_dir.exists():
+            file_count = sum(1 for item in sandbox_dir.iterdir() if item.name not in ('.git', 'node_modules', '.cache'))
+            if file_count > 0:
+                logger.info(f"Restoring sandbox from disk: {sandbox_id} ({file_count} items)")
+                manager = BoxLiteSandboxManager(sandbox_id)
+                _sandbox_managers[manager.sandbox_id] = manager
+                return manager
 
     manager = BoxLiteSandboxManager(sandbox_id)
     _sandbox_managers[manager.sandbox_id] = manager
