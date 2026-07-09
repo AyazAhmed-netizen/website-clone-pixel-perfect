@@ -1,3 +1,97 @@
 clone this website http://optimal-itsolutions.com/
 
 pixel perfect everything needs to match no any assumtion just pixel perfect match
+
+
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://localhost:20129/v1",
+    "ANTHROPIC_AUTH_TOKEN": "sk-6b21f31ae62411bf-1d755f-0a8693b5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "auto",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "auto",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "auto"
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/10598/.orca/agent-hooks/claude-hook.cmd",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/10598/.orca/agent-hooks/claude-hook.cmd",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/10598/.orca/agent-hooks/claude-hook.cmd",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/10598/.orca/agent-hooks/claude-hook.cmd",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/10598/.orca/agent-hooks/claude-hook.cmd",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/10598/.orca/agent-hooks/claude-hook.cmd",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/10598/.orca/agent-hooks/claude-hook.cmd",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
