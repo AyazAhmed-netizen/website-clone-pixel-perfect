@@ -1561,12 +1561,14 @@ export function NextingAgentChatPanel({
           onClose: () => {
             console.log("[Agent] Disconnected");
             setConnectionState("disconnected");
-            setIsLoading(false);
 
-            // If there's an in-progress assistant message stuck in "thinking" state,
-            // finalize it so the UI doesn't show "Thinking..." forever
+            // Only reset isLoading if there's no active processing.
+            // If the agent was running, the backend may still be processing.
+            // Resetting isLoading would let the user send another message,
+            // causing "Agent is already processing" error.
             const currentMsg = currentMessageRef.current;
             if (currentMsg) {
+              // Finalize the in-progress message so UI doesn't show "Thinking..." forever
               const blocks = blocksBuilderRef.current;
               const finalizedMsg: ChatMessage = {
                 ...currentMsg,
@@ -1589,6 +1591,10 @@ export function NextingAgentChatPanel({
 
               blocksBuilderRef.current = [];
               currentMessageRef.current = null;
+              // Don't reset isLoading here - let onDone/onError handle it
+              // to prevent sending while backend is still processing
+            } else {
+              setIsLoading(false);
             }
           },
           onError: () => {
@@ -1596,7 +1602,7 @@ export function NextingAgentChatPanel({
             setConnectionState("error");
             setIsLoading(false);
 
-            // Same as onClose: finalize any stuck "thinking" message
+            // Finalize any stuck "thinking" message
             const currentMsg = currentMessageRef.current;
             if (currentMsg) {
               const blocks = blocksBuilderRef.current;

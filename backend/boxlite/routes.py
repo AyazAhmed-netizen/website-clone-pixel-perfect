@@ -812,6 +812,14 @@ async def agent_websocket(websocket: WebSocket, sandbox_id: str):
             except asyncio.TimeoutError:
                 continue
 
+            # If the agent is already processing from a previous message,
+            # stop it first to avoid "Agent is already processing" error
+            if agent.session.is_running:
+                logger.warning("[BoxLiteAgent] Agent still running from previous message, stopping...")
+                agent.stop()
+                # Give it a moment to finish
+                await asyncio.sleep(0.5)
+
             # Process chat message with agent
             # Note: BoxLiteClaudeAgent manages sandbox state internally
             async for event in agent.process_message(
